@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+
+# This python3 script wraps the linux aspell command line command with a 
+# configurable set of pre-filters. 
+
+# The pyFilteredAspell command manipulates the aspell optional arguments: 
+# `--mode`, `-D`, '-e', '-H', '-t', '-n', '-M'. These optional arguments 
+# are used to set the pyFilteredAspell command's `filterName` variable. 
+# All other aspell arguments are passed unchanged to aspell. 
+
+# The pre-filters used by the pyFilteredAspell command are located in the 
+# user's `.config/pyFilteredAspellFilters` directory. 
+
+# The filters are chosen using configuration YAML which is loaded from 
+# the `.config/pyFilteredAspellFilters/config.yaml` file.
+
+# This configuration YAML has three dictionaries, each a mapping from the 
+# filterName to some other (string) value:
+
+# 1. `mapFilter` : (re)maps the filterName to a new filterName. This 
+# allows you to map an arbitrary filterName into a name either aspell or 
+# pyFilteredAspell understands.
+
+# 2. `mapFilterModule` : maps the filterName to a loadable Python module 
+# in the `.config/pyFilteredAspellFilters` directory. This allows a single 
+# Python module to handle multiple filterNames. 
+
+# 3. `useAspellFilter` : maps the filterName to a boolean which if True 
+# will ensure aspell's existing filter mode (with the name contained in 
+# the filterName variable) will be used directly. 
+
+# These mappings are applied in the order: `mapFilter`, `mapFilterModule`, 
+# `useAspellFilter` 
+
+import argparse
+import importlib
+import os
+import subprocess
+import sys
+import yaml
+
+parser = argparse.ArgumentParser(
+  description="A simple Aspell wrapper which provides configurable filters.",
+  epilog="We are only interested in the `--mode` argument, all other arguments will be passed directly onto Aspell"
+)
+parser.add_argument("--mode", help="Specify a filter mode", type=str)
+parser.add_argument("-D", help="Use Debctrl filter mode.", action="store_true")
+parser.add_argument("-e", help="Use email filter mode.", action="store_true")
+parser.add_argument("-H", help="Use html filter mode.", action="store_true")
+parser.add_argument("-t", help="Use tex filter mode.", action="store_true")
+parser.add_argument("-n", help="Use nroff filter mode.", action="store_true")
+parser.add_argument("-M", help="Use markdown filter mode.", action="store_true")
+args, aspellArgs = parser.parse_known_args()
+
+filterName = None
+if args.mode and filterName is None :
+  filterName = args.mode
+if args.D and filterName is None :
+  filterName = "debctrl"
+if args.e and filterName is None :
+  filterName = "email"
+if args.H and filterName is None :
+  filterName = "html"
+if args.t and filterName is None :
+  filterName = "tex"
+if args.n and filterName is None :
+  filterName = "nroff"
+if args.M and filterName is None :
+  filterName = "markdown"
+
+userConfigDir = os.path.expanduser("~/.config")
+sys.path.append(userConfigDir)
+
+filtersModuleName = "pyFilteredAspellFilters"
+filtersDir = os.path.join(userConfigDir, filtersModuleName)
+
+yamlConfigFile = os.path.join(filtersDir, "config.yaml")
+config = {
+  'mapFilterModule' : { },
+  'useAspellFilter' : { },
+  'mapFilter' : { }
+}
+if os.path.exists(yamlConfigFile) :
+  with open(yamlConfigFile) as yamlFile : 
+    yamlConfig = yaml.safe_load(yamlFile)
+  for aKey in config :
+    if aKey in yamlConfig and type(yamlConfig[aKey]) is dict :
+      config[aKey].update(yamlConfig[aKey])
+
+print(config)
+
+print(filterName)
+mapFilter = config['mapFilter']
+if filterName in mapFilter :
+  filterName = mapFilter[filterName]
+print(filterName)
+
+filterModule = filterName
+mapFilterModule = config['mapFilterModule']
+if filterName in mapFilterModule :
+  filterModule = mapFilterModule[filterName]
+print(filterModule)
+
+aspellArgs.insert(0, "aspell")
+aspellArgs.append("--mode")
+if filterName not in config['useAspellFilter'] :
+  if os.path.exists(
+     os.path.join(userConfigDir, "pyFilteredAspellFilters", filterModule+".py")) :
+    aspellArgs.append("none")
+    filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
+    newStdin = filter.filterStdin(filterName)
+    subprocess.run(aspellArgs, input=bytes(newStdin, "utf-8"))
+    sys.exit(0)
+  else:
+    filterName = "none"
+    
+aspellArgs.append(filterName)
+subprocess.run(aspellArgs)

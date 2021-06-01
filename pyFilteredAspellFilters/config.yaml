@@ -1,0 +1,32 @@
+# This YAML is used to configure the pyFilteredAspell aspell command line 
+# pre-filter wrapper. 
+
+# `mapFilter` : (re)maps the filterName to a new filterName. This 
+# allows you to map an arbitrary filterName into a name either aspell or 
+# pyFilteredAspell understands.
+#
+mapFilter:
+  #go: ccpp
+  javascript: ccpp
+  latex: tex
+  context: tex
+  
+# `mapFilterModule` : maps the filterName to a loadable Python module 
+# in the `.config/pyFilteredAspellFilters` directory. This allows a single 
+# Python module to handle multiple filterNames.
+#
+mapFilterModule:
+  go: commieFilter
+
+# `useAspellFilter` : maps the filterName to a boolean which if True 
+# will ensure aspell's existing filter mode (with the name contained in 
+# the filterName variable) will be used directly.
+#
+useAspellFilter:
+  comment: True
+  tex: True
+  markdown: True
+  ccpp: True
+
+
+

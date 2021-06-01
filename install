@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# This shell script installs the pyFilteredAspell command into the user's 
+# `.local/bin` and `.config/pyFilteredAspellFilters` respectively 
+
+# Ensure the user's config directory exists
+mkdir -p ~/.config
+
+# Copy over the existing filters
+cp -r pyFilteredAspellFilters ~/.config
+
+# Ensure the user's bin directory exists
+mkdir -p ~/.local/bin
+
+# Copy the pyFilteredAspell command
+cp pyFilteredAspell ~/.local/bin
+
+# Done!
