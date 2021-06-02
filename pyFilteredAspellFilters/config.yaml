@@ -6,7 +6,6 @@
 # pyFilteredAspell understands.
 #
 mapFilter:
-  #go: ccpp
   javascript: ccpp
   latex: tex
   context: tex
@@ -16,7 +15,15 @@ mapFilter:
 # Python module to handle multiple filterNames.
 #
 mapFilterModule:
+  sass: commieFilter
   go: commieFilter
+  c: commieFilter
+  cpp: commieFilter
+  css: commieFilter
+  html: commieFilter
+  python: commieFilter
+  ruby: commieFilter
+  shell: commieFilter
 
 # `useAspellFilter` : maps the filterName to a boolean which if True 
 # will ensure aspell's existing filter mode (with the name contained in 
@@ -28,5 +35,6 @@ useAspellFilter:
   markdown: True
   ccpp: True
 
-
+debug:
+  file: "/tmp/pyFilteredAspell-{}.log"
 

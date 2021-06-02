@@ -37,6 +37,7 @@ import importlib
 import os
 import subprocess
 import sys
+import time
 import yaml
 
 parser = argparse.ArgumentParser(
@@ -78,7 +79,8 @@ yamlConfigFile = os.path.join(filtersDir, "config.yaml")
 config = {
   'mapFilterModule' : { },
   'useAspellFilter' : { },
-  'mapFilter' : { }
+  'mapFilter' : { },
+  'debug' : { }
 }
 if os.path.exists(yamlConfigFile) :
   with open(yamlConfigFile) as yamlFile : 
@@ -87,27 +89,66 @@ if os.path.exists(yamlConfigFile) :
     if aKey in yamlConfig and type(yamlConfig[aKey]) is dict :
       config[aKey].update(yamlConfig[aKey])
 
+debugFile = None
+if 'file' in config['debug'] :
+  debugFile = open(config['debug']['file'].format(str(time.time())), 'w')
+  debugFile.write("config:\n")
+  debugFile.write("---------------------------------------------------------\n")
+  debugFile.write(yaml.dump(config))
+  debugFile.write("---------------------------------------------------------\n")
+
+if filterName is None :
+  print("Error: You must specify a filter mode")
+  sys.exit(-1)
+
+if debugFile:
+  debugFile.write("filterName: [{}]\n".format(filterName))
 mapFilter = config['mapFilter']
 if filterName in mapFilter :
   filterName = mapFilter[filterName]
+if debugFile:
+  debugFile.write("mapped filterName: [{}]\n".format(filterName))
 
 filterModule = filterName
 mapFilterModule = config['mapFilterModule']
 if filterName in mapFilterModule :
   filterModule = mapFilterModule[filterName]
+if debugFile:
+  debugFile.write("filterModule [{}]\n".format(filterModule))
+
+stdinStr = sys.stdin.read()
+if debugFile:
+  debugFile.write("---------------------------------------------------------\n")
+  debugFile.write("stdinStr: [{}]\n".format(stdinStr))
+  debugFile.write("---------------------------------------------------------\n")
 
 aspellArgs.insert(0, "aspell")
 aspellArgs.append("--mode")
-if filterName not in config['useAspellFilter'] :
+if filterName and filterName not in config['useAspellFilter'] :
   if os.path.exists(
      os.path.join(userConfigDir, "pyFilteredAspellFilters", filterModule+".py")) :
-    aspellArgs.append("none")
+    if debugFile:
+      debugFile.write("Running filter\n") 
     filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
-    newStdin = filter.filterStdin(filterName)
-    subprocess.run(aspellArgs, input=bytes(newStdin, "utf-8"))
-    sys.exit(0)
-  else:
+    filteredStdinStr = filter.filterStdin(stdinStr, filterName)
     filterName = "none"
-    
+  else:
+    if debugFile:
+      debugFile.write("No filter found\n") 
+    filteredStdinStr = stdinStr
+    filterName = "none"
+else: 
+  if debugFile:
+    debugFile.write("Using aspell filter\n") 
+  filteredStdinStr = stdinStr
+
 aspellArgs.append(filterName)
-subprocess.run(aspellArgs)
+
+if debugFile:
+  debugFile.write("---------------------------------------------------------\n")
+  debugFile.write("filteredStdinStr: [{}]\n".format(filteredStdinStr))
+  debugFile.write("---------------------------------------------------------\n")
+  for anArg in aspellArgs :
+    debugFile.write("anArg: [{}]\n".format(anArg))
+    
+subprocess.run(aspellArgs, input=bytes(filteredStdinStr, "utf-8"))

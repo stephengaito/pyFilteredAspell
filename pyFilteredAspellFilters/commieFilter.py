@@ -24,9 +24,7 @@ commieMapping = {
   'shell'  : { 'parser': '.shell_parser_state', 'method' : 'extract_comments' },
 }
 
-def filterStdin(filterName) :
-
-  stdinStr = sys.stdin.read()
+def filterStdin(stdinStr, filterName) :
 
   if filterName not in commieMapping : 
     return stdinStr
