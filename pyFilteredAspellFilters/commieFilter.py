@@ -1,7 +1,7 @@
 # This Python3 module is a filter in the pyFilteredAspell package.
 
 # The pyFilteredAspell command uses this module to extract comments 
-# inorder to spell check them using aspell. 
+# in order to spell check them using aspell. 
 
 # This module uses the `commie` Python package to extract comments 
 # from `sass`, `go`, `c`, `cpp`, `css`, `html`, `python`, `ruby`, and 
@@ -24,7 +24,7 @@ commieMapping = {
   'shell'  : { 'parser': '.shell_parser_state', 'method' : 'extract_comments' },
 }
 
-def filterStdin(stdinStr, filterName) :
+def filterStdin(stdinStr, filterName, debugFile) :
 
   if filterName not in commieMapping : 
     return stdinStr
@@ -35,6 +35,23 @@ def filterStdin(stdinStr, filterName) :
   )
     
   iter_comments = getattr(commie, commieMapping[filterName]['method'])
+
+  terseMode = False
+  if stdinStr[0] == '!' :
+    # We are in terse mode... so we need to remove the aspell terse mode 
+    # markers
+    terseMode = True
+    stdinLines = stdinStr.splitlines()
+    stdinLines.pop(0)
+    fixedLines = []
+    for aLine in stdinLines :
+      fixedLines.append(aLine[1:len(aLine)])
+    stdinStr = "\n".join(fixedLines)
+  
+    if debugFile :
+      debugFile.write("======================================================\n")
+      debugFile.write(stdinStr)
+      debugFile.write("======================================================\n")
 
   strSpans = []
 
@@ -57,4 +74,18 @@ def filterStdin(stdinStr, filterName) :
   # This span is OUTSIDE a comment.... so translate it to whitespace...
   strSpans.append(nonWhiteSpace.sub(" ", stdinStr[codeEnd:len(stdinStr)]))
 
-  return "".join(strSpans)
+  if terseMode :
+    # Now we need to replace the terse mode markers
+    filteredLines = "".join(strSpans).splitlines()
+    fixedLines = []
+    for aLine in filteredLines :
+      fixedLines.append('^'+aLine)
+    fixedLines.insert(0, "!")
+    filteredStdinStr = "\n".join(fixedLines)
+
+    if debugFile :
+      debugFile.write("======================================================\n")
+      debugFile.write(filteredStdinStr)
+      debugFile.write("======================================================\n")
+
+  return filteredStdinStr

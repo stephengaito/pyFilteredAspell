@@ -130,7 +130,7 @@ if filterName and filterName not in config['useAspellFilter'] :
     if debugFile:
       debugFile.write("Running filter\n") 
     filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
-    filteredStdinStr = filter.filterStdin(stdinStr, filterName)
+    filteredStdinStr = filter.filterStdin(stdinStr, filterName, debugFile)
     filterName = "none"
   else:
     if debugFile:
