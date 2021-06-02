@@ -87,19 +87,14 @@ if os.path.exists(yamlConfigFile) :
     if aKey in yamlConfig and type(yamlConfig[aKey]) is dict :
       config[aKey].update(yamlConfig[aKey])
 
-print(config)
-
-print(filterName)
 mapFilter = config['mapFilter']
 if filterName in mapFilter :
   filterName = mapFilter[filterName]
-print(filterName)
 
 filterModule = filterName
 mapFilterModule = config['mapFilterModule']
 if filterName in mapFilterModule :
   filterModule = mapFilterModule[filterName]
-print(filterModule)
 
 aspellArgs.insert(0, "aspell")
 aspellArgs.append("--mode")

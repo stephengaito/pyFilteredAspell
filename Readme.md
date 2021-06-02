@@ -11,7 +11,7 @@ The pyFilteredAspell command manipulates the aspell optional arguments:
 used to set the pyFilteredAspell command's `filterName` variable. All 
 other aspell arguments are passed unchanged to aspell. 
 
-The pre-filters use by the pyFilteredAspell command are located in the 
+The pre-filters used by the pyFilteredAspell command are located in the 
 user's `.config/pyFilteredAspellFilters` directory. 
 
 The filters are chosen using configuration YAML which is loaded from 
