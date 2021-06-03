@@ -38,7 +38,39 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 import yaml
+
+def mergeConfigData(configData, newConfigData, thePath) :
+  # This is a generic Python merge
+  # It is a *deep* merge and handles both dictionaries and arrays
+  #
+  if type(configData) is None :
+    print("ERROR configData should NEVER be None ")
+    sys.exit(-1)
+    
+  if type(configData) != type(newConfigData) :
+    print("Incompatible types {} and {} while trying to merge YAML data at {}".format(type(configData), type(newConfigData), thePath))
+    print("Stoping merge at {}".format(thePath))
+    return
+
+  if type(configData) is dict :
+    for key, value in newConfigData.items() :
+      if key not in configData :
+        configData[key] = value
+      elif type(configData[key]) is dict :
+        mergeConfigData(configData[key], value, thePath+'.'+key)
+      elif type(configData[key]) is list :
+        for aValue in value :
+          configData[key].append(aValue)
+      else :
+        configData[key] = value
+  elif type(configData) is list :
+    for value in newConfigData :
+      configData.append(value)
+  else :
+    print("ERROR configData MUST be either a dictionary or an array.")
+    sys.exit(-1)
 
 parser = argparse.ArgumentParser(
   description="A simple Aspell wrapper which provides configurable filters.",
@@ -80,14 +112,14 @@ config = {
   'mapFilterModule' : { },
   'useAspellFilter' : { },
   'mapFilter' : { },
+  'filterConfig' : { },
   'debug' : { }
 }
 if os.path.exists(yamlConfigFile) :
   with open(yamlConfigFile) as yamlFile : 
     yamlConfig = yaml.safe_load(yamlFile)
-  for aKey in config :
-    if aKey in yamlConfig and type(yamlConfig[aKey]) is dict :
-      config[aKey].update(yamlConfig[aKey])
+  if yamlConfig:
+    mergeConfigData(config, yamlConfig, "")
 
 debugFile = None
 if 'file' in config['debug'] :
@@ -129,8 +161,25 @@ if filterName and filterName not in config['useAspellFilter'] :
      os.path.join(userConfigDir, "pyFilteredAspellFilters", filterModule+".py")) :
     if debugFile:
       debugFile.write("Running filter\n") 
-    filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
-    filteredStdinStr = filter.filterStdin(stdinStr, filterName, debugFile)
+    try :
+      filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
+      filterConfig = { }
+      filterConfiguration = config['filterConfig']
+      if filterModule in filterConfiguration :
+        mergeConfigData(filterConfig, filterConfiguration[filterModule], "")
+      if filterName in filterConfiguration :
+        mergeConfigData(filterConfig, filterConfiguration[filterName], "")
+      if debugFile:
+        debugFile.write("filterConfig:\n{}\n".format(yaml.dump(filterConfig)))
+      filteredStdinStr = filter.filterStr(stdinStr, filterName, filterConfig, debugFile)
+    except Exception as ex:
+      if debugFile:
+        debugFile.write("could not run filter:\n")
+        debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+        debugFile.write("{}\n".format(str(ex)))
+        debugFile.write("{}\n".format(traceback.format_exc()))
+        debugFile.write("\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+      filteredStdinStr = stdinStr
     filterName = "none"
   else:
     if debugFile:

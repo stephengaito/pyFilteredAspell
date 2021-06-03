@@ -24,7 +24,7 @@ commieMapping = {
   'shell'  : { 'parser': '.shell_parser_state', 'method' : 'extract_comments' },
 }
 
-def filterStdin(stdinStr, filterName, debugFile) :
+def filterStr(stdinStr, filterName, filterConfig, debugFile) :
 
   if filterName not in commieMapping : 
     return stdinStr
@@ -53,6 +53,19 @@ def filterStdin(stdinStr, filterName, debugFile) :
       debugFile.write(stdinStr)
       debugFile.write("======================================================\n")
 
+  ignoreRegexps = []
+  if 'ignoreRegexps' in filterConfig :
+    for anIgnoreRegexp in filterConfig['ignoreRegexps'] :
+      ignoreRegexps.append(re.compile(anIgnoreRegexp, re.MULTILINE))
+
+  def whiteSpaces(theMatch) :
+    spaces = ' ' * (theMatch.end(0) - theMatch.start(0))
+    if debugFile:
+      debugFile.write("match: [{}]\n".format(str(theMatch)))
+      debugFile.write(" span: [{}]\n".format(theMatch.string[theMatch.start(0):theMatch.end(0)]))
+      debugFile.write("  sub: [{}]\n".format(spaces))
+    return spaces
+
   strSpans = []
 
   codeEnd = 0
@@ -64,12 +77,15 @@ def filterStdin(stdinStr, filterName, debugFile) :
     codeStart = comment.text_span.start
 
     # This span is OUTSIDE a comment.... so translate it to whitespace...
-    strSpans.append(nonWhiteSpace.sub(" ", stdinStr[codeEnd:codeStart]))
+    strSpans.append(re.sub(nonWhiteSpace, " ", stdinStr[codeEnd:codeStart]))
 
     codeEnd   = comment.text_span.end
 
     # This span is INSIDE a comment... so keep it as is...
-    strSpans.append(stdinStr[codeStart:codeEnd])
+    curSpan = stdinStr[codeStart:codeEnd]
+    for anIgnoreRegexp in ignoreRegexps :
+      curSpan = re.sub(anIgnoreRegexp, whiteSpaces, curSpan)
+    strSpans.append(curSpan)
 
   # This span is OUTSIDE a comment.... so translate it to whitespace...
   strSpans.append(nonWhiteSpace.sub(" ", stdinStr[codeEnd:len(stdinStr)]))
@@ -82,10 +98,12 @@ def filterStdin(stdinStr, filterName, debugFile) :
       fixedLines.append('^'+aLine)
     fixedLines.insert(0, "!")
     filteredStdinStr = "\n".join(fixedLines)
+  else:
+    filteredStdinStr = "".join(strSpans)
 
-    if debugFile :
-      debugFile.write("======================================================\n")
-      debugFile.write(filteredStdinStr)
-      debugFile.write("======================================================\n")
+  if debugFile :
+    debugFile.write("======================================================\n")
+    debugFile.write(filteredStdinStr)
+    debugFile.write("======================================================\n")
 
   return filteredStdinStr

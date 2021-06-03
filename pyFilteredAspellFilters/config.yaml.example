@@ -9,6 +9,7 @@ mapFilter:
   javascript: ccpp
   latex: tex
   context: tex
+  yaml: shell
   
 # `mapFilterModule` : maps the filterName to a loadable Python module 
 # in the `.config/pyFilteredAspellFilters` directory. This allows a single 
@@ -35,6 +36,30 @@ useAspellFilter:
   markdown: True
   ccpp: True
 
-debug:
-  file: "/tmp/pyFilteredAspell-{}.log"
+# `filterConfig` : provides configuation to the loaded filterModule.
+#
+# If you supply configuration for *both* the filterModule and the 
+# filterName, any configuration corresponding to the filterModule is 
+# overridden by the configuration corresponding to the filterName. (More 
+# specific configuration overrides any less specific configuration). 
+#
+# For any `commieFilter` based filters, the `ignoreRegexps` is an array of 
+# regular expressions for which any matching text will be filtered out of 
+# the text passed to aspell. 
+#
+filterConfig:
+  commieFilter:
+    ignoreRegexps:
+      # ignore URIs of various sorts
+      - '(\w+:)?(\/?\/?)([^\s\/\.]+[\/\.])+[^\s\.]+'
+      # ignore unix interpreter control lines
+      - '^#!.*\n'
+
+# uncomment the following lines to turn debugging ON
+#
+# The first `{}` in the file path will be replaced with the current unix 
+# time.
+#
+#debug:
+#  file: "/tmp/pyFilteredAspell-{}.log"
 
