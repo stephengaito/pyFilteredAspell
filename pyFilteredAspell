@@ -1,36 +1,36 @@
 #!/usr/bin/env python3
 
-# This python3 script wraps the linux aspell command line command with a 
-# configurable set of pre-filters. 
+# This python3 script wraps the Linux Aspell command line command with a
+# configurable set of pre-filters.
 
-# The pyFilteredAspell command manipulates the aspell optional arguments: 
-# `--mode`, `-D`, '-e', '-H', '-t', '-n', '-M'. These optional arguments 
-# are used to set the pyFilteredAspell command's `filterName` variable. 
-# All other aspell arguments are passed unchanged to aspell. 
+# The pyFilteredAspell command manipulates the Aspell optional arguments:
+# `--mode`, `-D`, '-e', '-H', '-t', '-n', '-M'. These optional arguments
+# are used to set the pyFilteredAspell command's `filterName` variable.
+# All other Aspell arguments are passed unchanged to Aspell.
 
-# The pre-filters used by the pyFilteredAspell command are located in the 
-# user's `.config/pyFilteredAspellFilters` directory. 
+# The pre-filters used by the pyFilteredAspell command are located in the
+# user's `.config/pyFilteredAspellFilters` directory.
 
-# The filters are chosen using configuration YAML which is loaded from 
+# The filters are chosen using configuration YAML which is loaded from
 # the `.config/pyFilteredAspellFilters/config.yaml` file.
 
-# This configuration YAML has three dictionaries, each a mapping from the 
+# This configuration YAML has three dictionaries, each a mapping from the
 # filterName to some other (string) value:
 
-# 1. `mapFilter` : (re)maps the filterName to a new filterName. This 
-# allows you to map an arbitrary filterName into a name either aspell or 
+# 1. `mapFilter` : (re)maps the filterName to a new filterName. This
+# allows you to map an arbitrary filterName into a name either Aspell or
 # pyFilteredAspell understands.
 
-# 2. `mapFilterModule` : maps the filterName to a loadable Python module 
-# in the `.config/pyFilteredAspellFilters` directory. This allows a single 
-# Python module to handle multiple filterNames. 
+# 2. `mapFilterModule` : maps the filterName to a loadable Python module
+# in the `.config/pyFilteredAspellFilters` directory. This allows a single
+# Python module to handle multiple filterNames.
 
-# 3. `useAspellFilter` : maps the filterName to a boolean which if True 
-# will ensure aspell's existing filter mode (with the name contained in 
-# the filterName variable) will be used directly. 
+# 3. `useAspellFilter` : maps the filterName to a Boolean which if True
+# will ensure Aspell's existing filter mode (with the name contained in
+# the filterName variable) will be used directly.
 
-# These mappings are applied in the order: `mapFilter`, `mapFilterModule`, 
-# `useAspellFilter` 
+# These mappings are applied in the order: `mapFilter`, `mapFilterModule`,
+# `useAspellFilter`
 
 import argparse
 import importlib
@@ -48,7 +48,7 @@ def mergeConfigData(configData, newConfigData, thePath) :
   if type(configData) is None :
     print("ERROR configData should NEVER be None ")
     sys.exit(-1)
-    
+
   if type(configData) != type(newConfigData) :
     print("Incompatible types {} and {} while trying to merge YAML data at {}".format(type(configData), type(newConfigData), thePath))
     print("Stoping merge at {}".format(thePath))
@@ -116,7 +116,7 @@ config = {
   'debug' : { }
 }
 if os.path.exists(yamlConfigFile) :
-  with open(yamlConfigFile) as yamlFile : 
+  with open(yamlConfigFile) as yamlFile :
     yamlConfig = yaml.safe_load(yamlFile)
   if yamlConfig:
     mergeConfigData(config, yamlConfig, "")
@@ -129,39 +129,41 @@ if 'file' in config['debug'] :
   debugFile.write(yaml.dump(config))
   debugFile.write("---------------------------------------------------------\n")
 
-if filterName is None :
-  print("Error: You must specify a filter mode")
-  sys.exit(-1)
-
-if debugFile:
-  debugFile.write("filterName: [{}]\n".format(filterName))
-mapFilter = config['mapFilter']
-if filterName in mapFilter :
-  filterName = mapFilter[filterName]
-if debugFile:
-  debugFile.write("mapped filterName: [{}]\n".format(filterName))
-
-filterModule = filterName
-mapFilterModule = config['mapFilterModule']
-if filterName in mapFilterModule :
-  filterModule = mapFilterModule[filterName]
-if debugFile:
-  debugFile.write("filterModule [{}]\n".format(filterModule))
-
 stdinStr = sys.stdin.read()
-if debugFile:
-  debugFile.write("---------------------------------------------------------\n")
-  debugFile.write("stdinStr: [{}]\n".format(stdinStr))
-  debugFile.write("---------------------------------------------------------\n")
 
-aspellArgs.insert(0, "aspell")
-aspellArgs.append("--mode")
-if filterName and filterName not in config['useAspellFilter'] :
-  if os.path.exists(
-     os.path.join(userConfigDir, "pyFilteredAspellFilters", filterModule+".py")) :
-    if debugFile:
-      debugFile.write("Running filter\n") 
-    try :
+try:
+
+  if filterName is None :
+    print("Error: You must specify a filter mode")
+    sys.exit(-1)
+
+  if debugFile:
+    debugFile.write("filterName: [{}]\n".format(filterName))
+  mapFilter = config['mapFilter']
+  if filterName in mapFilter :
+    filterName = mapFilter[filterName]
+  if debugFile:
+    debugFile.write("mapped filterName: [{}]\n".format(filterName))
+
+  filterModule = filterName
+  mapFilterModule = config['mapFilterModule']
+  if filterName in mapFilterModule :
+    filterModule = mapFilterModule[filterName]
+  if debugFile:
+    debugFile.write("filterModule [{}]\n".format(filterModule))
+
+  if debugFile:
+    debugFile.write("---------------------------------------------------------\n")
+    debugFile.write("stdinStr: [{}]\n".format(stdinStr))
+    debugFile.write("---------------------------------------------------------\n")
+
+  aspellArgs.insert(0, "aspell")
+  aspellArgs.append("--mode")
+  if filterName and filterName not in config['useAspellFilter'] :
+    if os.path.exists(
+       os.path.join(userConfigDir, "pyFilteredAspellFilters", filterModule+".py")) :
+      if debugFile:
+        debugFile.write("Running filter\n")
       filter = importlib.import_module("pyFilteredAspellFilters."+filterModule)
       filterConfig = { }
       filterConfiguration = config['filterConfig']
@@ -172,32 +174,41 @@ if filterName and filterName not in config['useAspellFilter'] :
       if debugFile:
         debugFile.write("filterConfig:\n{}\n".format(yaml.dump(filterConfig)))
       filteredStdinStr = filter.filterStr(stdinStr, filterName, filterConfig, debugFile)
-    except Exception as ex:
+      filterName = "none"
+    else:
       if debugFile:
-        debugFile.write("could not run filter:\n")
-        debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
-        debugFile.write("{}\n".format(str(ex)))
-        debugFile.write("{}\n".format(traceback.format_exc()))
-        debugFile.write("\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+        debugFile.write("No filter found\n")
       filteredStdinStr = stdinStr
-    filterName = "none"
+      filterName = "none"
   else:
     if debugFile:
-      debugFile.write("No filter found\n") 
+      debugFile.write("Using aspell filter\n")
     filteredStdinStr = stdinStr
-    filterName = "none"
-else: 
+
+  aspellArgs.append(filterName)
+
   if debugFile:
-    debugFile.write("Using aspell filter\n") 
+    debugFile.write("---------------------------------------------------------\n")
+    debugFile.write("filteredStdinStr: [{}]\n".format(filteredStdinStr))
+    debugFile.write("---------------------------------------------------------\n")
+    for anArg in aspellArgs :
+      debugFile.write("anArg: [{}]\n".format(anArg))
+
+except Exception as ex:
+  if debugFile:
+    debugFile.write("could not run pyFilterAspell:\n")
+    debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+    debugFile.write("{}\n".format(str(ex)))
+    debugFile.write("{}\n".format(traceback.format_exc()))
+    debugFile.write("\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
   filteredStdinStr = stdinStr
 
-aspellArgs.append(filterName)
-
-if debugFile:
-  debugFile.write("---------------------------------------------------------\n")
-  debugFile.write("filteredStdinStr: [{}]\n".format(filteredStdinStr))
-  debugFile.write("---------------------------------------------------------\n")
-  for anArg in aspellArgs :
-    debugFile.write("anArg: [{}]\n".format(anArg))
-    
-subprocess.run(aspellArgs, input=bytes(filteredStdinStr, "utf-8"))
+try:
+  subprocess.run(aspellArgs, input=bytes(filteredStdinStr, "utf-8"))
+except Exception as ex:
+  if debugFile:
+    debugFile.write("could not run aspell:\n")
+    debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
+    debugFile.write("{}\n".format(str(ex)))
+    debugFile.write("{}\n".format(traceback.format_exc()))
+    debugFile.write("\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
