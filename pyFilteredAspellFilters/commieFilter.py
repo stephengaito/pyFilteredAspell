@@ -1,44 +1,55 @@
 # This Python3 module is a filter in the pyFilteredAspell package.
 
-# The pyFilteredAspell command uses this module to extract comments 
-# in order to spell check them using aspell. 
+# The pyFilteredAspell command uses this module to extract comments
+# in order to spell check them using aspell.
 
-# This module uses the `commie` Python package to extract comments 
-# from `sass`, `go`, `c`, `cpp`, `css`, `html`, `python`, `ruby`, and 
+# This module uses the `commie` Python package to extract comments
+# from `sass`, `go`, `c`, `cpp`, `css`, `html`, `python`, `ruby`, and
 # `shell` code.
 
 import importlib
 import inspect
 import re
 import sys
+import yaml
 
 commieMapping = {
-  'sass'   : { 'parser': '.c_parser_regex',     'method' : 'extract_comments' },
-  'go'     : { 'parser': '.c_parser_state',     'method' : 'iter_comments_go' },
-  'c'      : { 'parser': '.c_parser_state',     'method' : 'iter_comments_c'  },
-  'cpp'    : { 'parser': '.c_parser_state',     'method' : 'iter_comments_c'  },
-  'css'    : { 'parser': '.css_parser_regex',   'method' : 'extract_comments' },
-  'html'   : { 'parser': '.html_parser_regex',  'method' : 'extract_comments' },
-  'python' : { 'parser': '.python_parser',      'method' : 'extract_comments' },
-  'ruby'   : { 'parser': '.ruby_parser_regex',  'method' : 'extract_comments' },
-  'shell'  : { 'parser': '.shell_parser_state', 'method' : 'extract_comments' },
+  'sass'   : { 'package': 'commie.parsers', 'parser': '.c_parser_regex',     'method' : 'extract_comments' },
+  'go'     : { 'package': 'commie.parsers', 'parser': '.c_parser_state',     'method' : 'iter_comments_go' },
+  'c'      : { 'package': 'commie.parsers', 'parser': '.c_parser_state',     'method' : 'iter_comments_c'  },
+  'cpp'    : { 'package': 'commie.parsers', 'parser': '.c_parser_state',     'method' : 'iter_comments_c'  },
+  'css'    : { 'package': 'commie.parsers', 'parser': '.css_parser_regex',   'method' : 'extract_comments' },
+  'html'   : { 'package': 'commie.parsers', 'parser': '.html_parser_regex',  'method' : 'extract_comments' },
+  'python' : { 'package': 'commie.parsers', 'parser': '.python_parser',      'method' : 'extract_comments' },
+  'ruby'   : { 'package': 'commie.parsers', 'parser': '.ruby_parser_regex',  'method' : 'extract_comments' },
+  'shell'  : { 'package': 'commie.parsers', 'parser': '.shell_parser_state', 'method' : 'extract_comments' },
 }
 
 def filterStr(stdinStr, filterName, filterConfig, debugFile) :
 
-  if filterName not in commieMapping : 
-    return stdinStr
-    
+  if (
+    ( 'parser' not in filterConfig  ) or
+    ( 'package' not in filterConfig ) or
+    ( 'method' not in filterConfig  )
+  ):
+    if filterName not in commieMapping :
+      return stdinStr
+    else :
+      filterConfig.update(commieMapping[filterName])
+
+  if debugFile :
+    debugFile.write("\n{}\n".format(yaml.dump(filterConfig)))
+
   commie = importlib.import_module(
-    commieMapping[filterName]['parser'],
-    package="commie.parsers"
+    filterConfig['parser'],
+    filterConfig['package']
   )
-    
-  iter_comments = getattr(commie, commieMapping[filterName]['method'])
+
+  iter_comments = getattr(commie, filterConfig['method'])
 
   terseMode = False
   if stdinStr[0] == '!' :
-    # We are in terse mode... so we need to remove the aspell terse mode 
+    # We are in terse mode... so we need to remove the aspell terse mode
     # markers
     terseMode = True
     stdinLines = stdinStr.splitlines()
@@ -47,7 +58,7 @@ def filterStr(stdinStr, filterName, filterConfig, debugFile) :
     for aLine in stdinLines :
       fixedLines.append(aLine[1:len(aLine)])
     stdinStr = "\n".join(fixedLines)
-  
+
     if debugFile :
       debugFile.write("======================================================\n")
       debugFile.write(stdinStr)

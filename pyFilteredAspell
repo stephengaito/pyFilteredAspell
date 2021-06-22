@@ -72,6 +72,24 @@ def mergeConfigData(configData, newConfigData, thePath) :
     print("ERROR configData MUST be either a dictionary or an array.")
     sys.exit(-1)
 
+def mergeAspellArgs(aspellArgs, filterName) :
+
+  if filterName not in aspellArgs :
+    return aspellArgs['any']['args'].copy()
+
+  result = []
+  if 'basedOn' in aspellArgs[filterName] :
+    result.extend(
+      mergeAspellArgs(aspellArgs, aspellArgs[filterName]['basedOn'])
+    )
+  elif filterName != 'any' :
+    result.extend(aspellArgs['any']['args'])
+
+  if 'args' in aspellArgs[filterName] :
+    result.extend(aspellArgs[filterName]['args'])
+
+  return result
+
 parser = argparse.ArgumentParser(
   description="A simple Aspell wrapper which provides configurable filters.",
   epilog="We are only interested in the `--mode` argument, all other arguments will be passed directly onto Aspell"
@@ -110,10 +128,17 @@ filtersDir = os.path.join(userConfigDir, filtersModuleName)
 yamlConfigFile = os.path.join(filtersDir, "config.yaml")
 config = {
   'mapFilterModule' : { },
-  'useAspellFilter' : { },
+  'useAspellFilter' : {
+    'all': True
+  },
   'mapFilter' : { },
   'filterConfig' : { },
-  'debug' : { }
+  'debug' : { },
+  'aspellArgs' : {
+    'any' : {
+      'args' : []
+    }
+  }
 }
 if os.path.exists(yamlConfigFile) :
   with open(yamlConfigFile) as yamlFile :
@@ -139,6 +164,9 @@ try:
 
   if debugFile:
     debugFile.write("filterName: [{}]\n".format(filterName))
+
+  newAspellArgs = mergeAspellArgs(config['aspellArgs'], filterName)
+
   mapFilter = config['mapFilter']
   if filterName in mapFilter :
     filterName = mapFilter[filterName]
@@ -181,11 +209,17 @@ try:
       filteredStdinStr = stdinStr
       filterName = "none"
   else:
-    if debugFile:
-      debugFile.write("Using aspell filter\n")
-    filteredStdinStr = stdinStr
+    if filterName == 'all' :
+      if debugFile:
+        debugFile.write("Using aspell with all content filtered out\n")
+      filteredStdinStr = ""
+    else :
+      if debugFile:
+        debugFile.write("Using aspell filter\n")
+      filteredStdinStr = stdinStr
 
   aspellArgs.append(filterName)
+  aspellArgs.extend(newAspellArgs)
 
   if debugFile:
     debugFile.write("---------------------------------------------------------\n")
@@ -195,6 +229,7 @@ try:
       debugFile.write("anArg: [{}]\n".format(anArg))
 
 except Exception as ex:
+  aspellArgs.append('none')
   if debugFile:
     debugFile.write("could not run pyFilterAspell:\n")
     debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
@@ -208,6 +243,8 @@ try:
 except Exception as ex:
   if debugFile:
     debugFile.write("could not run aspell:\n")
+    for anArg in aspellArgs :
+      debugFile.write("anArg: [{}]\n".format(anArg))
     debugFile.write("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n")
     debugFile.write("{}\n".format(str(ex)))
     debugFile.write("{}\n".format(traceback.format_exc()))
