@@ -1,8 +1,8 @@
-# This YAML is used to configure the pyFilteredAspell aspell command line 
-# pre-filter wrapper. 
+# This YAML is used to configure the pyFilteredAspell aspell command line
+# pre-filter wrapper.
 
-# `mapFilter` : (re)maps the filterName to a new filterName. This 
-# allows you to map an arbitrary filterName into a name either aspell or 
+# `mapFilter` : (re)maps the filterName to a new filterName. This
+# allows you to map an arbitrary filterName into a name either aspell or
 # pyFilteredAspell understands.
 #
 mapFilter:
@@ -10,9 +10,9 @@ mapFilter:
   latex: tex
   context: tex
   yaml: shell
-  
-# `mapFilterModule` : maps the filterName to a loadable Python module 
-# in the `.config/pyFilteredAspellFilters` directory. This allows a single 
+
+# `mapFilterModule` : maps the filterName to a loadable Python module
+# in the `.config/pyFilteredAspellFilters` directory. This allows a single
 # Python module to handle multiple filterNames.
 #
 mapFilterModule:
@@ -26,8 +26,8 @@ mapFilterModule:
   ruby: commieFilter
   shell: commieFilter
 
-# `useAspellFilter` : maps the filterName to a boolean which if True 
-# will ensure aspell's existing filter mode (with the name contained in 
+# `useAspellFilter` : maps the filterName to a boolean which if True
+# will ensure aspell's existing filter mode (with the name contained in
 # the filterName variable) will be used directly.
 #
 useAspellFilter:
@@ -38,16 +38,27 @@ useAspellFilter:
 
 # `filterConfig` : provides configuation to the loaded filterModule.
 #
-# If you supply configuration for *both* the filterModule and the 
-# filterName, any configuration corresponding to the filterModule is 
-# overridden by the configuration corresponding to the filterName. (More 
-# specific configuration overrides any less specific configuration). 
+# If you supply configuration for *both* the filterModule and the
+# filterName, any configuration corresponding to the filterModule is
+# overridden by the configuration corresponding to the filterName. (More
+# specific configuration overrides any less specific configuration).
 #
-# For any `commieFilter` based filters, the `ignoreRegexps` is an array of 
-# regular expressions for which any matching text will be filtered out of 
-# the text passed to aspell. 
+# For any `commieFilter` based filters, the `ignoreRegexps` is an array of
+# regular expressions for which any matching text will be filtered out of
+# the text passed to aspell.
+#
+# For any `commieFilter` based filters, the `package`, `parser` and
+# `method` keys can be used to specify an arbitrary python
+# package.module::method to load and use as a comment generator. This
+# `method` MUST return Commie comment objects. NOTE: the `parser` value
+# MUST contain a leading `.` or the python importlib.import_module call
+# will probably fail.
 #
 filterConfig:
+  python:
+    package: extraCommieParsers
+    parser: .python_parser
+    method: extract_comments
   commieFilter:
     ignoreRegexps:
       # ignore URIs of various sorts
@@ -55,9 +66,23 @@ filterConfig:
       # ignore unix interpreter control lines
       - '^#!.*\n'
 
+# `aspellArgs` : provides additional arguments supplied to aspell for any
+# given filter. You can use the `basedOn` property to chain more general
+# arguments. The deepest `basedOn` filter arguments are added first. The
+# arguments supplied by the additional `any` filter is used by all
+# filters.
+#
+aspellArgs:
+  any:
+    args:
+      - "--add-filter=url"
+      - "--run-together"
+      - "--run-together-limit=10"
+      - "--camel-case"
+
 # uncomment the following lines to turn debugging ON
 #
-# The first `{}` in the file path will be replaced with the current unix 
+# The first `{}` in the file path will be replaced with the current unix
 # time.
 #
 #debug:
