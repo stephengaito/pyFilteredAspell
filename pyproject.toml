@@ -1,0 +1,26 @@
+[project]
+name = "pyFilteredAspell"
+version = "0.0.1"
+description = "A simple python command line wrapper to provide configurable pre-filters to the aspell command line tool"
+authors = [
+    {name = "Stephen Gaito", email = "stephen@perceptisys.co.uk"},
+]
+dependencies = [
+    "pyyaml~=5.4",
+]
+requires-python = ">=3.9"
+dynamic = ["classifiers"]
+license = {text = "MIT"}
+
+[project.urls]
+homepage = "https://github.com/stephengaito/pyFilteredAspell"
+
+[project.scripts]
+pyFilteredAspell = "pyFilteredAspell:cli"
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+
+[tool]
+[tool.pdm]

@@ -13,10 +13,4 @@ cp -r pyFilteredAspellFilters ~/.config
 # Copy over the extra Commie based parser
 cp -r extraCommieParsers ~/.config
 
-# Ensure the user's bin directory exists
-mkdir -p ~/.local/bin
-
-# Copy the pyFilteredAspell command
-cp pyFilteredAspell ~/.local/bin
-
 # Done!
