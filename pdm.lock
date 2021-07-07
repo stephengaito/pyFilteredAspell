@@ -1,4 +1,9 @@
 [[package]]
+name = "commie"
+version = "1.0.5"
+summary = "Extracts comments from source code in different programming languages"
+
+[[package]]
 name = "pyyaml"
 version = "5.4.1"
 requires_python = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
@@ -6,9 +11,13 @@ summary = "YAML parser and emitter for Python"
 
 [metadata]
 lock_version = "3"
-content_hash = "sha256:bbbf2f84636e22a206a59c52af3341054d1f4b229095e8091f1343655b4ce5f2"
+content_hash = "sha256:e4d6a62dba6f66f1244306b78cbaf4c79faee9c61d2f2edc4fa5fe79e04de374"
 
 [metadata.files]
+"commie 1.0.5" = [
+    {file = "commie-1.0.5-py3-none-any.whl", hash = "sha256:65c0302dda77f2fce28c711fa361a6e05c77c656abe6d05fb1650694abd8c92f"},
+    {file = "commie-1.0.5.tar.gz", hash = "sha256:4931bc5c1ff3608221a898f2ae648ed6efc7905eec50ab8193d0826ad3b2d66e"},
+]
 "pyyaml 5.4.1" = [
     {file = "PyYAML-5.4.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:3b2b1824fe7112845700f815ff6a489360226a5609b96ec2190a45e62a9fc922"},
     {file = "PyYAML-5.4.1-cp27-cp27m-win32.whl", hash = "sha256:129def1b7c1bf22faffd67b8f3724645203b79d8f4cc81f674654d9902cb4393"},

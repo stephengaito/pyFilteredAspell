@@ -7,6 +7,7 @@ authors = [
 ]
 dependencies = [
     "pyyaml~=5.4",
+    "commie~=1.0",
 ]
 requires-python = ">=3.9"
 dynamic = ["classifiers"]
